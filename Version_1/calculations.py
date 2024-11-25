@@ -46,16 +46,28 @@ def generate_study_plan(exams):
         # Distribute study time evenly across the days remaining
         daily_study_time = adjusted_prep_time / days_remaining
 
+        # Parse personal preferences for preferred study start time
+        preferred_start_time = 18  # Default start time
+        if personal_preferences:
+            try:
+                # Assume personal_preferences contains a preferred start time like "Start Time: 17"
+                if "Start Time:" in personal_preferences:
+                    preferred_start_time = int(personal_preferences.split("Start Time:")[1].strip().split()[0])
+            except:
+                pass  # Keep default if parsing fails
+
+        # Ensure preferred_start_time is within 0-24
+        if not (0 <= preferred_start_time < 24):
+            preferred_start_time = 18
+
         # Allocate study times for each day
         for i in range(days_remaining):
             date = today + timedelta(days=i)
             if date > exam_date:
                 continue
 
-            # Example: Allocate study time from 18:00 to 21:00 by default
-            # You can adjust this or parse 'personal_preferences' for custom times
-            study_start = 18  # Default start hour
-            study_end = 18 + daily_study_time  # End hour based on daily study time
+            study_start = preferred_start_time
+            study_end = study_start + daily_study_time
 
             # Ensure study_end does not exceed 24 hours
             if study_end > 24:

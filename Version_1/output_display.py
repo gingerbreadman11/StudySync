@@ -2,8 +2,8 @@
 
 import streamlit as st
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import pandas as pd
+import itertools
 
 def display_study_plan(study_plans, study_schedule):
     # First, display any error messages
@@ -32,6 +32,12 @@ def display_study_plan(study_plans, study_schedule):
     # Convert to DataFrame
     df = pd.DataFrame(schedule_data)
 
+    # Assign colors to exams
+    colors = itertools.cycle(['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown'])
+    exam_colors = {}
+    for exam in df['Exam'].unique():
+        exam_colors[exam] = next(colors)
+
     # Create the plot
     fig, ax = plt.subplots(figsize=(10, 6))
 
@@ -54,9 +60,8 @@ def display_study_plan(study_plans, study_schedule):
         ax.broken_barh(
             [(x - 0.4, 0.8)],  # x position and bar width
             (y_start, y_end - y_start),  # y position and height
-            facecolors='tab:blue',
-            edgecolors='black',
-            label=row['Exam'] if idx == 0 else ""
+            facecolors=exam_colors[row['Exam']],
+            edgecolors='black'
         )
 
         # Annotate the exam name
@@ -83,5 +88,10 @@ def display_study_plan(study_plans, study_schedule):
     ax.set_xlabel('Date')
     ax.set_title('Weekly Study Schedule')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    # Create a legend
+    handles = [plt.Rectangle((0,0),1,1, color=exam_colors[exam]) for exam in exam_colors]
+    labels = exam_colors.keys()
+    ax.legend(handles, labels, title='Exams', bbox_to_anchor=(1.05, 1), loc='upper left')
 
     st.pyplot(fig)
