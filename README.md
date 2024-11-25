@@ -60,4 +60,4 @@ Okay, so you don’t *have* to use a virtual environment, but trust me—when pe
    deactivate
    ```
 
-Not mandatory, but if you skip this and things break, don’t say we didn’t warn you! 😅
+Not mandatory, but if you skip this and things break, don’t say I didn’t warn you! 
