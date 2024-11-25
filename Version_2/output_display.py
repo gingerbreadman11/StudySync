@@ -1,8 +1,8 @@
 # output_display.py
 
 import streamlit as st
-import matplotlib.pyplot as plt
-import pandas as pd
+from streamlit_calendar import calendar
+import datetime  # Import the datetime module
 
 def display_study_plan(study_plans, study_schedule):
     # First, display any error messages
@@ -10,103 +10,87 @@ def display_study_plan(study_plans, study_schedule):
         if "error" in plan:
             st.error(plan["error"])
 
-    st.header("📅 Your Weekly Schedule")
+    st.header("📅 Your Study Schedule")
 
-    # Prepare data for plotting
-    schedule_data = []
+    # Prepare data for the calendar
+    calendar_events = []
+
+    activity_colors = {
+        'Study': '#0000FF',  # Blue
+    }
 
     for date, activities in study_schedule.items():
         for activity in activities:
-            entry = {
-                'Date': date,
-                'Activity': activity.get('activity', 'Unknown'),
-                'Start': activity['start_time'],
-                'End': activity['end_time'],
-                'Exam': activity.get('exam_name', '')
-            }
-            schedule_data.append(entry)
+            if activity.get('activity') != 'Study':
+                continue  # Skip non-study activities
 
-    if not schedule_data:
-        st.info("No schedule to display.")
+            title = activity.get('activity', 'Unknown')
+            exam = activity.get('exam_name', '')
+            if exam:
+                title += f" ({exam})"
+
+            # Get start and end times
+            start_time = activity.get('start_time')
+            end_time = activity.get('end_time')
+
+            # Ensure start_time and end_time are strings
+            if isinstance(start_time, datetime.time):
+                start_time = start_time.strftime('%H:%M')
+            if isinstance(end_time, datetime.time):
+                end_time = end_time.strftime('%H:%M')
+
+            # Parse times
+            try:
+                start_time_obj = datetime.datetime.strptime(start_time, '%H:%M').time()
+                end_time_obj = datetime.datetime.strptime(end_time, '%H:%M').time()
+            except ValueError:
+                st.warning(f"Invalid time format for event '{title}' on {date}. Skipping.")
+                continue
+
+            start_datetime = datetime.datetime.combine(date, start_time_obj)
+            end_datetime = datetime.datetime.combine(date, end_time_obj)
+
+            # Handle crossing midnight
+            if end_datetime <= start_datetime:
+                end_datetime += datetime.timedelta(days=1)
+
+            event = {
+                'title': title,
+                'start': start_datetime.isoformat(),
+                'end': end_datetime.isoformat(),
+                'allDay': False,
+                'backgroundColor': activity_colors.get('Study', '#0000FF'),
+                'borderColor': activity_colors.get('Study', '#0000FF'),
+            }
+
+            calendar_events.append(event)
+
+    if not calendar_events:
+        st.info("No study events to display.")
         return
 
-    # Convert to DataFrame
-    df = pd.DataFrame(schedule_data)
-
-    # Assign colors to activities
-    activity_colors = {
-        'Sleep': 'tab:gray',
-        'Eating': 'tab:orange',
-        'Workout': 'tab:green',
-        'Study': 'tab:blue'
+    # Set calendar options
+    calendar_options = {
+        'initialView': 'timeGridWeek',
+        'headerToolbar': {
+            'left': 'prev,next today',
+            'center': 'title',
+            'right': 'dayGridMonth,timeGridWeek,timeGridDay',
+        },
+        'allDaySlot': False,
+        'themeSystem': 'standard',
     }
 
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    # Create a list of dates for the x-axis labels
-    dates = sorted(df['Date'].unique())
-
-    # Set up the y-axis for 24 hours
-    ax.set_ylim(0, 24)
-
-    # Map dates to x positions
-    date_to_x = {date: idx for idx, date in enumerate(dates)}
-    x_labels = [date.strftime('%Y-%m-%d') for date in dates]
-    x_positions = list(range(len(dates)))
-
-    # Plot the activities
-    for idx, row in df.iterrows():
-        x = date_to_x[row['Date']]
-        y_start = row['Start'].hour + row['Start'].minute / 60.0
-        y_end = row['End'].hour + row['End'].minute / 60.0
-        duration = y_end - y_start
-        if duration <= 0:
-            duration += 24  # Handle crossing midnight
-
-        # Ensure that y_start and duration are within 0 to 24
-        y_start = y_start % 24
-        duration = duration % 24
-
-        ax.broken_barh(
-            [(x - 0.4, 0.8)],  # x position and bar width
-            (y_start, duration),  # y position and height
-            facecolors=activity_colors.get(row['Activity'], 'tab:blue'),
-            edgecolors='black'
+    # Display the calendar
+    try:
+        calendar_value = calendar(
+            events=calendar_events,
+            options=calendar_options,
+            custom_css='',
+            key='study_calendar'
         )
-
-        # Annotate the activity
-        label = row['Activity']
-        if row['Activity'] == 'Study' and row['Exam']:
-            label += f" ({row['Exam']})"
-
-        ax.text(
-            x,
-            y_start + duration / 2,
-            label,
-            va='center',
-            ha='center',
-            color='white',
-            fontsize=8,
-            rotation=90
-        )
-
-    # Set the x-axis labels
-    ax.set_xticks(x_positions)
-    ax.set_xticklabels(x_labels, rotation=45, ha='right')
-
-    # Set the y-axis labels
-    ax.set_ylabel('Hour of Day')
-    ax.set_yticks(range(0, 25, 2))
-    ax.set_yticklabels([f"{i}:00" for i in range(0, 25, 2)])
-
-    ax.set_xlabel('Date')
-    ax.set_title('Weekly Schedule')
-    ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-
-    # Create a legend
-    handles = [plt.Rectangle((0,0),1,1, color=color) for activity, color in activity_colors.items()]
-    labels = activity_colors.keys()
-    ax.legend(handles, labels, title='Activities', bbox_to_anchor=(1.05, 1), loc='upper left')
-
-    st.pyplot(fig)
+        st.write(calendar_value)
+    except Exception as e:
+        st.error(f"An error occurred while displaying the calendar: {e}")
+        st.write("Calendar events data:")
+        st.write(calendar_events)
