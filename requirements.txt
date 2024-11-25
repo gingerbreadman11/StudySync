@@ -1,0 +1,5 @@
+#so i tested some of the libraries and i found that the tinker is a pain in the ass for mac users
+#since homebrew doesnt really support it. i tried out some other GUI and found streamlit 
+watchdog
+PySimpleGUI
+streamlit

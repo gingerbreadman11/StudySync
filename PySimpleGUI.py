@@ -1,5 +1,4 @@
-# main.py
-
+#this code does not work with the newest python 3.13
 import PySimpleGUI as sg
 import datetime
 from datetime import timedelta
