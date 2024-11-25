@@ -1,6 +1,7 @@
 #so i tested some of the libraries and i found that the tinker is a pain in the ass for mac users
 #since homebrew doesnt really support it. i tried out some other GUI and found streamlit 
-python 3.12.7
+python==3.12.7
 watchdog
 PySimpleGUI
-streamlit
+streamlit==1.25.0
+matplotlib==3.8.0
