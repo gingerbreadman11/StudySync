@@ -6,7 +6,8 @@ The Study Phase Planner is an app designed to help students efficiently plan the
    ```bash
    cd Version_X
    ```
-2. ```bash
+2. run streamlit and opene it in your browser of choice
+   ```bash
    streamlit run app.py
    ```
 3. ENJOY :)
