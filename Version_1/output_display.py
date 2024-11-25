@@ -3,7 +3,6 @@
 import streamlit as st
 import matplotlib.pyplot as plt
 import pandas as pd
-import itertools
 
 def display_study_plan(study_plans, study_schedule):
     # First, display any error messages
@@ -11,35 +10,39 @@ def display_study_plan(study_plans, study_schedule):
         if "error" in plan:
             st.error(plan["error"])
 
-    st.header("📅 Your Weekly Study Schedule")
+    st.header("📅 Your Weekly Schedule")
 
     # Prepare data for plotting
     schedule_data = []
 
-    for date, blocks in study_schedule.items():
-        for block in blocks:
-            schedule_data.append({
+    for date, activities in study_schedule.items():
+        for activity in activities:
+            entry = {
                 'Date': date,
-                'Exam': block['exam_name'],
-                'Start': block['start_hour'],
-                'End': block['end_hour']
-            })
+                'Activity': activity.get('activity', 'Unknown'),
+                'Start': activity['start_time'],
+                'End': activity['end_time'],
+                'Exam': activity.get('exam_name', '')
+            }
+            schedule_data.append(entry)
 
     if not schedule_data:
-        st.info("No study schedule to display.")
+        st.info("No schedule to display.")
         return
 
     # Convert to DataFrame
     df = pd.DataFrame(schedule_data)
 
-    # Assign colors to exams
-    colors = itertools.cycle(['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown'])
-    exam_colors = {}
-    for exam in df['Exam'].unique():
-        exam_colors[exam] = next(colors)
+    # Assign colors to activities
+    activity_colors = {
+        'Sleep': 'tab:gray',
+        'Eating': 'tab:orange',
+        'Workout': 'tab:green',
+        'Study': 'tab:blue'
+    }
 
     # Create the plot
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     # Create a list of dates for the x-axis labels
     dates = sorted(df['Date'].unique())
@@ -52,23 +55,31 @@ def display_study_plan(study_plans, study_schedule):
     x_labels = [date.strftime('%Y-%m-%d') for date in dates]
     x_positions = list(range(len(dates)))
 
-    # Plot the study blocks
+    # Plot the activities
     for idx, row in df.iterrows():
         x = date_to_x[row['Date']]
-        y_start = row['Start']
-        y_end = row['End']
+        y_start = row['Start'].hour + row['Start'].minute / 60.0
+        y_end = row['End'].hour + row['End'].minute / 60.0
+        duration = y_end - y_start
+        if duration <= 0:
+            duration += 24  # Handle crossing midnight
+
         ax.broken_barh(
             [(x - 0.4, 0.8)],  # x position and bar width
-            (y_start, y_end - y_start),  # y position and height
-            facecolors=exam_colors[row['Exam']],
+            (y_start, duration),  # y position and height
+            facecolors=activity_colors.get(row['Activity'], 'tab:blue'),
             edgecolors='black'
         )
 
-        # Annotate the exam name
+        # Annotate the activity
+        label = row['Activity']
+        if row['Activity'] == 'Study' and row['Exam']:
+            label += f" ({row['Exam']})"
+
         ax.text(
             x,
-            (y_start + y_end) / 2,
-            row['Exam'],
+            y_start + duration / 2,
+            label,
             va='center',
             ha='center',
             color='white',
@@ -86,12 +97,12 @@ def display_study_plan(study_plans, study_schedule):
     ax.set_yticklabels([f"{i}:00" for i in range(0, 25, 2)])
 
     ax.set_xlabel('Date')
-    ax.set_title('Weekly Study Schedule')
+    ax.set_title('Weekly Schedule')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
 
     # Create a legend
-    handles = [plt.Rectangle((0,0),1,1, color=exam_colors[exam]) for exam in exam_colors]
-    labels = exam_colors.keys()
-    ax.legend(handles, labels, title='Exams', bbox_to_anchor=(1.05, 1), loc='upper left')
+    handles = [plt.Rectangle((0,0),1,1, color=color) for activity, color in activity_colors.items()]
+    labels = activity_colors.keys()
+    ax.legend(handles, labels, title='Activities', bbox_to_anchor=(1.05, 1), loc='upper left')
 
     st.pyplot(fig)

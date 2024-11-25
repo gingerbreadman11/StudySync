@@ -1,11 +1,16 @@
 # calculations.py
 
-from datetime import datetime, timedelta
-import json
+from datetime import datetime, timedelta, time
 
-def generate_study_plan(exams):
+def generate_study_plan(inputs):
     study_plans = []
-    study_schedule = {}  # This will hold the overall study schedule
+    study_schedule = {}  # Holds the overall schedule
+
+    exams = inputs["exams"]
+    sleep_start_time = inputs["sleep_start_time"]
+    sleep_duration = inputs["sleep_duration"]
+    eating_times = inputs["eating_times"]
+    workout_times = inputs["workout_times"]
 
     today = datetime.today().date()
     end_date = max(exam["exam_date"] for exam in exams)
@@ -17,6 +22,73 @@ def generate_study_plan(exams):
         date = today + timedelta(days=i)
         study_schedule[date] = []
 
+    # Build fixed activities schedule for each day
+    fixed_schedule = {}
+
+    for i in range(total_days):
+        date = today + timedelta(days=i)
+        fixed_schedule[date] = []
+
+        # Sleep times
+        sleep_end_datetime = datetime.combine(date, sleep_start_time) + timedelta(hours=sleep_duration)
+        sleep_end_date = sleep_end_datetime.date()
+        sleep_end_time = sleep_end_datetime.time()
+
+        if sleep_end_date > date:
+            # Sleep crosses midnight
+            sleep_intervals = [
+                {"start_time": sleep_start_time, "end_time": time(23, 59, 59)},
+            ]
+            # Add sleep for the next day
+            next_day = date + timedelta(days=1)
+            if next_day <= end_date:
+                if next_day not in fixed_schedule:
+                    fixed_schedule[next_day] = []
+                fixed_schedule[next_day].append({
+                    "activity": "Sleep",
+                    "start_time": time(0, 0),
+                    "end_time": sleep_end_time
+                })
+        else:
+            sleep_intervals = [
+                {"start_time": sleep_start_time, "end_time": sleep_end_time}
+            ]
+
+        fixed_schedule[date].extend([{"activity": "Sleep", **interval} for interval in sleep_intervals])
+
+        # Eating times
+        for eating_time in eating_times:
+            start_time = eating_time["start_time"]
+            duration = eating_time["duration"]
+            end_time_datetime = datetime.combine(date, start_time) + timedelta(hours=duration)
+            end_time = end_time_datetime.time()
+
+            if end_time_datetime.date() > date:
+                end_time = time(23, 59, 59)  # Cap at midnight
+
+            fixed_schedule[date].append({
+                "activity": "Eating",
+                "start_time": start_time,
+                "end_time": end_time
+            })
+
+        # Workout times
+        for workout_time in workout_times:
+            start_time = workout_time["start_time"]
+            duration = workout_time["duration"]
+            end_time_datetime = datetime.combine(date, start_time) + timedelta(hours=duration)
+            end_time = end_time_datetime.time()
+
+            if end_time_datetime.date() > date:
+                end_time = time(23, 59, 59)  # Cap at midnight
+
+            fixed_schedule[date].append({
+                "activity": "Workout",
+                "start_time": start_time,
+                "end_time": end_time
+            })
+
+    # For each exam, calculate study times and allocate into available slots
     for idx, exam in enumerate(exams):
         exam_name = exam["exam_name"]
         exam_date = exam["exam_date"]
@@ -24,7 +96,7 @@ def generate_study_plan(exams):
         prep_time = exam["prep_time"]
         personal_preferences = exam["personal_preferences"]
 
-        days_remaining = (exam_date - today).days
+        days_remaining = (exam_date - today).days + 1
 
         if days_remaining <= 0:
             study_plans.append({
@@ -46,53 +118,126 @@ def generate_study_plan(exams):
         # Distribute study time evenly across the days remaining
         daily_study_time = adjusted_prep_time / days_remaining
 
-        # Parse personal preferences for preferred study start time
-        preferred_start_time = 18  # Default start time
-        if personal_preferences:
-            try:
-                # Assume personal_preferences contains a preferred start time like "Start Time: 17"
-                if "Start Time:" in personal_preferences:
-                    preferred_start_time = int(personal_preferences.split("Start Time:")[1].strip().split()[0])
-            except:
-                pass  # Keep default if parsing fails
-
-        # Ensure preferred_start_time is within 0-24
-        if not (0 <= preferred_start_time < 24):
-            preferred_start_time = 18
-
-        # Allocate study times for each day
+        # For each day, allocate study time into available slots
         for i in range(days_remaining):
             date = today + timedelta(days=i)
             if date > exam_date:
                 continue
 
-            study_start = preferred_start_time
-            study_end = study_start + daily_study_time
+            # Get fixed activities for the day
+            occupied_intervals = fixed_schedule.get(date, [])
 
-            # Ensure study_end does not exceed 24 hours
-            if study_end > 24:
-                study_end = 24
+            # Create a list of available intervals
+            available_intervals = get_available_intervals(occupied_intervals)
 
-            # Round study_start and study_end to nearest integer for plotting
-            study_block = {
-                "exam_name": exam_name,
-                "start_hour": int(study_start),
-                "end_hour": int(study_end)
-            }
+            # Allocate study time into available intervals
+            remaining_study_time = daily_study_time
+            for interval in available_intervals:
+                interval_start = interval["start_time"]
+                interval_end = interval["end_time"]
+                interval_duration = time_diff_in_hours(interval_start, interval_end)
 
-            # Add the study block to the schedule
-            study_schedule[date].append(study_block)
+                if interval_duration <= 0:
+                    continue
 
-        study_plan = {
-            "exam_name": exam_name,
-            "exam_date": exam_date,
-            "days_remaining": days_remaining,
-            "daily_study_time": round(daily_study_time, 2),
-            "total_prep_time": prep_time,
-            "difficulty_level": difficulty_level,
-            "personal_preferences": personal_preferences
-        }
+                study_time = min(remaining_study_time, interval_duration)
 
-        study_plans.append(study_plan)
+                study_start_time = interval_start
+                study_end_time = add_hours_to_time(study_start_time, study_time)
+
+                # Add study block to schedule
+                study_block = {
+                    "activity": "Study",
+                    "exam_name": exam_name,
+                    "start_time": study_start_time,
+                    "end_time": study_end_time
+                }
+                fixed_schedule[date].append(study_block)
+
+                remaining_study_time -= study_time
+
+                # Update occupied intervals
+                occupied_intervals.append({
+                    "activity": "Study",
+                    "start_time": study_start_time,
+                    "end_time": study_end_time
+                })
+
+                if remaining_study_time <= 0:
+                    break
+
+            if remaining_study_time > 0:
+                # Not enough time to schedule all study time
+                study_plans.append({
+                    "exam_name": exam_name,
+                    "error": f"Not enough available time on {date} to schedule all study time for '{exam_name}'."
+                })
+
+    # Convert fixed_schedule to study_schedule for plotting
+    for date, activities in fixed_schedule.items():
+        # Sort activities by start_time
+        activities_sorted = sorted(activities, key=lambda x: x["start_time"])
+        study_schedule[date] = activities_sorted
 
     return study_plans, study_schedule
+
+def get_available_intervals(occupied_intervals):
+    # Given a list of occupied intervals (activities), return a list of available intervals
+    # Occupied intervals are dictionaries with 'start_time' and 'end_time'
+    # We assume the day starts at 0:00 and ends at 24:00
+
+    # First, sort the occupied intervals by start_time
+    occupied_intervals = sorted(occupied_intervals, key=lambda x: x["start_time"])
+
+    available_intervals = []
+    day_start = time(0, 0)
+    day_end = time(23, 59, 59)
+
+    # Initialize previous end time to day start
+    prev_end_time = day_start
+
+    for interval in occupied_intervals:
+        start_time = interval["start_time"]
+        end_time = interval["end_time"]
+
+        # If there is a gap between prev_end_time and start_time, it's an available interval
+        if time_compare(start_time, prev_end_time) > 0:
+            available_intervals.append({
+                "start_time": prev_end_time,
+                "end_time": start_time
+            })
+
+        # Update prev_end_time
+        if time_compare(end_time, prev_end_time) > 0:
+            prev_end_time = end_time
+
+    # After the last occupied interval, if there's time left until day_end
+    if time_compare(day_end, prev_end_time) > 0:
+        available_intervals.append({
+            "start_time": prev_end_time,
+            "end_time": day_end
+        })
+
+    return available_intervals
+
+def time_compare(t1, t2):
+    # Compare two time objects
+    # Returns positive if t1 > t2, zero if equal, negative if t1 < t2
+    datetime1 = datetime.combine(datetime.today(), t1)
+    datetime2 = datetime.combine(datetime.today(), t2)
+    delta = datetime1 - datetime2
+    return delta.total_seconds()
+
+def time_diff_in_hours(t1, t2):
+    datetime1 = datetime.combine(datetime.today(), t1)
+    datetime2 = datetime.combine(datetime.today(), t2)
+    delta = datetime2 - datetime1
+    total_hours = delta.total_seconds() / 3600.0
+    if total_hours < 0:
+        total_hours += 24  # Handle crossing midnight
+    return total_hours
+
+def add_hours_to_time(t, hours):
+    datetime_t = datetime.combine(datetime.today(), t)
+    new_datetime = datetime_t + timedelta(hours=hours)
+    return new_datetime.time()
