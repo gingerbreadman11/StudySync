@@ -64,6 +64,10 @@ def display_study_plan(study_plans, study_schedule):
         if duration <= 0:
             duration += 24  # Handle crossing midnight
 
+        # Ensure that y_start and duration are within 0 to 24
+        y_start = y_start % 24
+        duration = duration % 24
+
         ax.broken_barh(
             [(x - 0.4, 0.8)],  # x position and bar width
             (y_start, duration),  # y position and height

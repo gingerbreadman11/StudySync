@@ -30,16 +30,20 @@ def generate_study_plan(inputs):
         fixed_schedule[date] = []
 
         # Sleep times
-        sleep_end_datetime = datetime.combine(date, sleep_start_time) + timedelta(hours=sleep_duration)
+        sleep_start_datetime = datetime.combine(date, sleep_start_time)
+        sleep_end_datetime = sleep_start_datetime + timedelta(hours=sleep_duration)
         sleep_end_date = sleep_end_datetime.date()
         sleep_end_time = sleep_end_datetime.time()
 
         if sleep_end_date > date:
             # Sleep crosses midnight
-            sleep_intervals = [
-                {"start_time": sleep_start_time, "end_time": time(23, 59, 59)},
-            ]
-            # Add sleep for the next day
+            # Current day sleep
+            fixed_schedule[date].append({
+                "activity": "Sleep",
+                "start_time": sleep_start_time,
+                "end_time": time(23, 59, 59)
+            })
+            # Next day sleep
             next_day = date + timedelta(days=1)
             if next_day <= end_date:
                 if next_day not in fixed_schedule:
@@ -50,43 +54,20 @@ def generate_study_plan(inputs):
                     "end_time": sleep_end_time
                 })
         else:
-            sleep_intervals = [
-                {"start_time": sleep_start_time, "end_time": sleep_end_time}
-            ]
-
-        fixed_schedule[date].extend([{"activity": "Sleep", **interval} for interval in sleep_intervals])
+            # Sleep within the same day
+            fixed_schedule[date].append({
+                "activity": "Sleep",
+                "start_time": sleep_start_time,
+                "end_time": sleep_end_time
+            })
 
         # Eating times
         for eating_time in eating_times:
-            start_time = eating_time["start_time"]
-            duration = eating_time["duration"]
-            end_time_datetime = datetime.combine(date, start_time) + timedelta(hours=duration)
-            end_time = end_time_datetime.time()
-
-            if end_time_datetime.date() > date:
-                end_time = time(23, 59, 59)  # Cap at midnight
-
-            fixed_schedule[date].append({
-                "activity": "Eating",
-                "start_time": start_time,
-                "end_time": end_time
-            })
+            add_activity_to_schedule(fixed_schedule, date, end_date, "Eating", eating_time)
 
         # Workout times
         for workout_time in workout_times:
-            start_time = workout_time["start_time"]
-            duration = workout_time["duration"]
-            end_time_datetime = datetime.combine(date, start_time) + timedelta(hours=duration)
-            end_time = end_time_datetime.time()
-
-            if end_time_datetime.date() > date:
-                end_time = time(23, 59, 59)  # Cap at midnight
-
-            fixed_schedule[date].append({
-                "activity": "Workout",
-                "start_time": start_time,
-                "end_time": end_time
-            })
+            add_activity_to_schedule(fixed_schedule, date, end_date, "Workout", workout_time)
 
     # For each exam, calculate study times and allocate into available slots
     for idx, exam in enumerate(exams):
@@ -145,14 +126,42 @@ def generate_study_plan(inputs):
                 study_start_time = interval_start
                 study_end_time = add_hours_to_time(study_start_time, study_time)
 
-                # Add study block to schedule
-                study_block = {
-                    "activity": "Study",
-                    "exam_name": exam_name,
-                    "start_time": study_start_time,
-                    "end_time": study_end_time
-                }
-                fixed_schedule[date].append(study_block)
+                # Handle crossing midnight for study times
+                if time_compare(study_end_time, study_start_time) <= 0:
+                    # Study time crosses midnight
+                    # Add study block up to midnight
+                    study_block_1 = {
+                        "activity": "Study",
+                        "exam_name": exam_name,
+                        "start_time": study_start_time,
+                        "end_time": time(23, 59, 59)
+                    }
+                    fixed_schedule[date].append(study_block_1)
+
+                    # Add study block for the next day
+                    next_day = date + timedelta(days=1)
+                    if next_day <= end_date:
+                        if next_day not in fixed_schedule:
+                            fixed_schedule[next_day] = []
+                        study_block_2 = {
+                            "activity": "Study",
+                            "exam_name": exam_name,
+                            "start_time": time(0, 0),
+                            "end_time": study_end_time
+                        }
+                        fixed_schedule[next_day].append(study_block_2)
+                        # Update occupied intervals for the next day
+                        occupied_intervals_next_day = fixed_schedule[next_day]
+                        occupied_intervals_next_day.append(study_block_2)
+                else:
+                    # Study time within the same day
+                    study_block = {
+                        "activity": "Study",
+                        "exam_name": exam_name,
+                        "start_time": study_start_time,
+                        "end_time": study_end_time
+                    }
+                    fixed_schedule[date].append(study_block)
 
                 remaining_study_time -= study_time
 
@@ -180,6 +189,39 @@ def generate_study_plan(inputs):
         study_schedule[date] = activities_sorted
 
     return study_plans, study_schedule
+
+def add_activity_to_schedule(fixed_schedule, date, end_date, activity_name, activity_time):
+    start_time = activity_time["start_time"]
+    duration = activity_time["duration"]
+    end_time_datetime = datetime.combine(date, start_time) + timedelta(hours=duration)
+    end_date_activity = end_time_datetime.date()
+    end_time = end_time_datetime.time()
+
+    if end_date_activity > date:
+        # Activity crosses midnight
+        # Current day activity
+        fixed_schedule[date].append({
+            "activity": activity_name,
+            "start_time": start_time,
+            "end_time": time(23, 59, 59)
+        })
+        # Next day activity
+        next_day = date + timedelta(days=1)
+        if next_day <= end_date:
+            if next_day not in fixed_schedule:
+                fixed_schedule[next_day] = []
+            fixed_schedule[next_day].append({
+                "activity": activity_name,
+                "start_time": time(0, 0),
+                "end_time": end_time
+            })
+    else:
+        # Activity within the same day
+        fixed_schedule[date].append({
+            "activity": activity_name,
+            "start_time": start_time,
+            "end_time": end_time
+        })
 
 def get_available_intervals(occupied_intervals):
     # Given a list of occupied intervals (activities), return a list of available intervals
