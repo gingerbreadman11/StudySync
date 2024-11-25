@@ -1,6 +1,6 @@
 venv
 test.venv
-__pycache__
+Version_1/__pycache__/
 calculations.cpython-312.pyc
 gui_input.cpython-312.pyc
 output.cpython-312.pyc
