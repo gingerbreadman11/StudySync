@@ -1,6 +1,15 @@
 # StudySync
 The Study Phase Planner is an app designed to help students efficiently plan their study phases leading up to exams. Users input details such as exam dates, difficulty levels, available time, sleep requirements, travel time, and meal preferences. The app then generates a personalized study schedule, ensuring balanced preparation for each subject while taking into consideration personal needs. The goal is to create a flexible and adaptive study plan that maximizes productivity without compromising well-being. Just kidding there is no well-being at ETH. 
 
+## How to run the app
+1. Go into the folder:  
+   ```bash
+   cd Version_X
+   ```
+2. ```bash
+   streamlit run app.py
+   ```
+3. ENJOY :)
 ## How to Contribute
 1. Clone the repository:  
    ```bash
