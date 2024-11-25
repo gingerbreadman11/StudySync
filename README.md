@@ -16,9 +16,48 @@ The Study Phase Planner is an app designed to help students efficiently plan the
    ```
 3. Commit changes and push to the repository:  
    ```bash
+   git add .
    git commit -m "Task description"
    git push origin <branch-name>
    ```
 
----
-## Important if you dont want to work on a branch you shouldnt change one of the main files directly! Create a new file and copy the code and then change it on the new file. otherwise There will be merge issues when 2 people are woring on the same file simultaniously.
+## If you don’t want to work on a branch, you shouldn’t change one of the main files directly! Create a new file, copy the code, and then make your changes in the new file. Otherwise, there will be merge issues when two people are working on the same file simultaneously.
+
+### Virtual Environments (Optional, but Seriously, Just Do It)
+
+Okay, so you don’t *have* to use a virtual environment, but trust me—when people are on different setups, **everything that can break will break**. Especially when someone checks out a different version of Python or some random package. If you don’t want that pain, here’s what to do:
+
+1. **Set Up a Virtual Environment:**  
+   Run this in the project folder:  
+   ```bash
+   python3 -m venv .venv
+   ```
+
+2. **Activate It:**  
+   - Mac/Linux:  
+     ```bash
+     source .venv/bin/activate
+     ```
+   - Windows:  
+     ```bash
+     .venv\Scripts\activate
+     ```
+
+3. **Install Dependencies:**  
+   Make sure you’re on the same page as everyone else:  
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **If You Add Stuff:**  
+   Don’t forget to update `requirements.txt`:  
+   ```bash
+   pip freeze > requirements.txt
+   ```
+
+5. **Deactivate When You’re Done:**  
+   ```bash
+   deactivate
+   ```
+
+Not mandatory, but if you skip this and things break, don’t say we didn’t warn you! 😅
