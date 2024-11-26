@@ -1,7 +1,13 @@
+# Virtual environments
 venv
 test.venv
+
+#Compiled Python files
 Version_1/__pycache__/
 calculations.cpython-312.pyc
 gui_input.cpython-312.pyc
 output.cpython-312.pyc
 __pycache__/
+
+#Editor/IDE-specific settings
+.vscode/
