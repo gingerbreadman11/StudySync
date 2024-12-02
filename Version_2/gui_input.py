@@ -10,7 +10,7 @@ def get_user_inputs():
 
     # Get Type 1 activity start time and duration
     type1_start_time = st.time_input(
-        "Type 1 Activity Start Time", value=st.session_state.get('type1_start_time', time(9, 0))
+        "Type 1 Activity Start Time", value=st.session_state.get('type1_start_time', time(9, 00))
     )
     type1_duration = st.number_input(
         "Type 1 Activity Duration (hours)",
