@@ -18,6 +18,7 @@ def get_user_inputs():
         max_value=24.0,
         value=st.session_state.get('type1_duration', 1.0),
         step=0.5
+        
     )
 
     st.header("Exam Details (Type 2)")
