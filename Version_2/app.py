@@ -1,5 +1,11 @@
 # app.py
 
+# test
+
+# test von Scott
+
+# merge error test
+
 import streamlit as st
 from gui_input import get_user_inputs
 from calculations import generate_study_plan
