@@ -5,6 +5,8 @@ from datetime import datetime, time, date, timedelta
 def get_user_inputs():
     st.title("📅 Study Plan Generator")
 
+    events_dict = {}
+    exams_dict = {}
     # Initialize session state for events and exams
     if "events" not in st.session_state:
         st.session_state["events"] = {}
@@ -16,6 +18,7 @@ def get_user_inputs():
     st.header("Non-Negotiable Events")
     event_name = st.text_input("Event Name", key="event_name")
     event_start_time = st.time_input("Event Start Time", key="event_start_time")
+    #event_start_time = st.time_input("Event Start Time", value=time(9, 0), key="event_start_time")
     event_duration = st.number_input(
         "Event Duration (hours)", min_value=0.5, max_value=24.0, step=0.5, key="event_duration"
     )
@@ -24,6 +27,7 @@ def get_user_inputs():
     if add_event and event_name:
         st.session_state["events"][event_name] = [event_start_time, event_duration]
         st.success(f"Added event: {event_name}")
+        events_dict[event_name] = [event_start_time, event_duration]
 
     if not st.session_state["events"]:
         st.write("No non-negotiable events added yet.")
@@ -37,6 +41,7 @@ def get_user_inputs():
     if add_exam and exam_name:
         st.session_state["exams"][exam_name] = exam_date
         st.success(f"Added exam: {exam_name}")
+        exams_dict[exam_name] = [exam_date]
 
     if not st.session_state["exams"]:
         st.write("No exams added yet.")
@@ -60,7 +65,7 @@ def get_user_inputs():
         inputs = st.session_state.get("inputs", {"events": {}, "exams": {}})
 
     # Return the current inputs for further processing
-    return {"events": st.session_state["events"], "exams": st.session_state["exams"]}
+    return events_dict, exams_dict
 
 
 
