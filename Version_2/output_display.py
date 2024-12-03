@@ -18,16 +18,29 @@ def display_schedule(schedule):
             start_datetime = datetime.combine(sched_date, activity['start_time'])
             end_datetime = datetime.combine(sched_date, activity['end_time'])
 
+
+            # Assign colors based on the activity type
+            if activity['activity'] == "Type 1":
+                event_color = "blue"
+            elif activity['activity'] == "Study":
+                event_color = "red"
+            else:
+                event_color = "green"
+
             # Create event dictionary
             event = {
                 'title': activity['activity'],
                 'start': start_datetime.strftime('%Y-%m-%dT%H:%M:%S'),
                 'end': end_datetime.strftime('%Y-%m-%dT%H:%M:%S'),
+                'color': event_color,  # Add color property
+                
             }
             events.append(event)
 
     # Calendar options
     calendar_options = {
+        "editable": "true",
+        "selectable": "true",
         "initialView": "timeGridWeek",
         "headerToolbar": {
             "left": "prev,next today",

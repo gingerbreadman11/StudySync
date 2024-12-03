@@ -79,7 +79,7 @@ def get_user_inputs():
 
     # Get Type 1 activity start time and duration
     type1_start_time = st.time_input(
-        "Type 1 Activity Start Time", value=st.session_state.get('type1_start_time', time(9, 0))
+        "Type 1 Activity Start Time", value=st.session_state.get('type1_start_time', time(9, 00))
     )
     type1_duration = st.number_input(
         "Type 1 Activity Duration (hours)",
@@ -87,6 +87,7 @@ def get_user_inputs():
         max_value=24.0,
         value=st.session_state.get('type1_duration', 1.0),
         step=0.5
+        
     )
 
     st.header("Exam Details (Type 2)")
