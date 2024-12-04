@@ -1,18 +1,18 @@
 from datetime import datetime, timedelta, time
 
-def calculations(inputs):
+def generate_study_plan(inputs):
     events, exams = inputs
     
-    # Step 1: Initialize the schedule
+    # Initialize the schedule
     schedule = {}
     
-    # Step 2: Add all events to the schedule
+    # Add all events to the schedule
     for event_name, (event_start, duration) in events.items():
         # Calculate event end time
         event_end = (datetime.combine(datetime.today(), event_start) + timedelta(hours=duration)).time()
         
         # Add this event to all relevant days
-        days_with_events = [datetime.today().date() + timedelta(days=i) for i in range(7)]  # Example: Add for a week
+        days_with_events = [datetime.today().date() + timedelta(days=i) for i in range(100)]  # Example: Add for a week
         for event_day in days_with_events:
             if event_day not in schedule:
                 schedule[event_day] = []
@@ -22,14 +22,30 @@ def calculations(inputs):
                 'end_time': event_end,
             })
     
-    # Step 3: Prepare a list of exams sorted by their dates
+    # Prepare a list of exams sorted by their dates
     sorted_exams = sorted(exams.items(), key=lambda x: x[1])  # Sort by exam date
     exam_cycle = [exam for exam, _ in sorted_exams]  # Maintain the cycle order
     num_exams = len(exam_cycle)
     
-    # Step 4: Distribute study time across all exams
+    # Add all exams to schedule
+    for exam_name, exam_start in exams.items():
+        # Calculate exam end time
+        exam_end = (exam_start + timedelta(hours=2)).time()
+
+        # Add exam to relevant day
+        day_of_exam = exam_start.date()
+        if day_of_exam not in schedule:
+            schedule[day_of_exam] = []
+        schedule[day_of_exam].append({
+            'activity': exam_name,
+            'start_time': exam_start.time(),
+            'end_time': exam_end
+        })
+    
+
+    # Distribute study time across all exams
     day_index = 0
-    for study_day in (datetime.today().date() + timedelta(days=i) for i in range(7)):
+    for study_day in (datetime.today().date() + timedelta(days=i) for i in range(100)):
         if day_index >= num_exams:
             day_index = 0  # Cycle back to the first exam
         
@@ -50,13 +66,13 @@ def calculations(inputs):
         available_times = calculate_available_slots(study_day, schedule)
         
         # Allocate study time
-        daily_study_hours = 2  # Example: 2 hours per day
+        daily_study_hours = 6  # Example: 2 hours per day
         for slot_start, slot_end in available_times:
             study_start = slot_start
-            study_end = (datetime.combine(datetime.today(), study_start) + timedelta(hours=daily_study_hours)).time()
+            study_end = min((datetime.combine(datetime.today(), study_start) + timedelta(hours=daily_study_hours)).time(), slot_end)
             
             if study_end > slot_end:
-                continue  # Not enough time in this slot
+                study_end = slot_end
             
             # Add study session to the schedule
             schedule[study_day].append({
