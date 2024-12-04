@@ -23,7 +23,7 @@ def generate_study_plan(inputs):
             'activity': exam_name,
             'start_time': exam_start.time(),
             'end_time': exam_end,
-            'color': "red"
+            'color': "#534666"
         })
 
         
@@ -41,26 +41,27 @@ def generate_study_plan(inputs):
                 'activity': event_name,
                 'start_time': event_start,
                 'end_time': event_end,
-                'color': "blue"
+                'color': "#DC8665"
             })
     
 
-    
     # Distribute study time
     day_index = 0
-    daily_study_hours = 6 
-    for study_day in (datetime.today().date() + timedelta(days=i) for i in range(100)):
-        if day_index >= num_exams:
-            day_index = 0  # Cycle back to the first exam
-        
+    daily_study_hours = 6
+
+    # Determine the last exam date
+    last_exam_date = max(exam.date() for exam in exams.values())
+
+    for study_day in (datetime.today().date() + timedelta(days=i) for i in range((last_exam_date - datetime.today().date()).days + 1)):
+        # Skip to the next exam in the cycle if the current one is past
+        while day_index < num_exams and study_day >= exams[exam_cycle[day_index]].date():
+            day_index += 1
+
+        if day_index >= num_exams:  # If all exams are past, stop
+            continue
+
         # Select the exam for this day
         current_exam = exam_cycle[day_index]
-        exam_datetime = exams[current_exam]
-        exam_date = exam_datetime.date()
-        
-        # Skip past exams
-        if study_day >= exam_date:
-            continue
         
         # Ensure the schedule for the current day exists
         if study_day not in schedule:
@@ -88,7 +89,7 @@ def generate_study_plan(inputs):
                 'activity': f'Study {current_exam}',
                 'start_time': study_start,
                 'end_time': study_end,
-                'color': "green"
+                'color': "#EEB462"
             })
 
             allocated_hours += study_hours
@@ -96,9 +97,6 @@ def generate_study_plan(inputs):
             # Stop if daily study goal is reached
             if allocated_hours >= daily_study_hours:
                 break
-
-        # Move to the next exam in the cycle
-        day_index += 1
     
     return schedule
 

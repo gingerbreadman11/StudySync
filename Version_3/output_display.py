@@ -19,7 +19,7 @@ def display_schedule(schedule):
             end_datetime = datetime.combine(sched_date, activity['end_time'])
 
 
-            event_color = activity.get('color', 'green')
+            event_color = activity.get('color', 'gray')
 
             # Create event dictionary
             event = {
