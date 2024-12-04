@@ -1,4 +1,3 @@
-
 import streamlit as st
 from datetime import datetime, time, date, timedelta
 
@@ -32,10 +31,13 @@ def get_user_inputs():
     st.header("Exams")
     exam_name = st.text_input("Exam Name", key="exam_name")
     exam_date = st.date_input("Exam Date", min_value=date.today(), key="exam_date")
+    exam_time = st.time_input("Exam Time", key="exam_time")  # Add time input
     add_exam = st.button("Add Exam")
 
     if add_exam and exam_name:
-        st.session_state["exams"][exam_name] = exam_date
+        # Combine exam_date and exam_time into a datetime object
+        exam_datetime = datetime.combine(exam_date, exam_time)
+        st.session_state["exams"][exam_name] = exam_datetime
         st.success(f"Added exam: {exam_name}")
 
     if not st.session_state["exams"]:
@@ -46,20 +48,13 @@ def get_user_inputs():
 
     # Return inputs if generate_plan is clicked
     if generate_plan:
-        # Combine events and exams into a single dictionary
-        inputs = {
-            "events": st.session_state.get("events", {}),
-            "exams": st.session_state.get("exams", {})
-        }
-        # Store inputs in session state
-        st.session_state["inputs"] = inputs
-        st.session_state["plan_generated"] = True
+        # Prepare the final output
+        events = st.session_state["events"]
+        exams = st.session_state["exams"]
+        output = events, exams
+        st.session_state['plan_generated'] = True  # Set the plan_generated flag
         st.success("Study plan inputs saved successfully!")
-    else:
-        # If inputs are already in session state, retrieve them
-        inputs = st.session_state.get("inputs", {"events": {}, "exams": {}})
+        return output
 
-    # Return the current inputs for further processing
-    return {"events": st.session_state["events"], "exams": st.session_state["exams"]}
-
-
+    # Default return when 'Generate Study Plan' is not clicked
+    return st.session_state.get("events", {}), st.session_state.get("exams", {})
