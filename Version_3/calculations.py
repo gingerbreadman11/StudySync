@@ -26,14 +26,18 @@ def generate_study_plan(inputs):
             'color': "#534666"
         })
 
-        
+    # Determine the last exam date
+    last_exam_date = max(exam.date() for exam in exams.values())
+    today_date = datetime.today().date()
+    days_until_last_exam = (last_exam_date - today_date).days
+
     # Add all events to the schedule
     for event_name, (event_start, duration) in events.items():
 
         event_end = (datetime.combine(datetime.today(), event_start) + timedelta(hours=duration)).time()
         
 
-        days_with_events = [datetime.today().date() + timedelta(days=i) for i in range(100)]
+        days_with_events = [datetime.today().date() + timedelta(days=i) for i in range(days_until_last_exam)]
         for event_day in days_with_events:
             if event_day not in schedule:
                 schedule[event_day] = []
@@ -49,8 +53,6 @@ def generate_study_plan(inputs):
     day_index = 0
     daily_study_hours = 6
 
-    # Determine the last exam date
-    last_exam_date = max(exam.date() for exam in exams.values())
 
     for study_day in (datetime.today().date() + timedelta(days=i) for i in range((last_exam_date - datetime.today().date()).days + 1)):
         # Skip to the next exam in the cycle if the current one is past
