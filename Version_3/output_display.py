@@ -19,13 +19,7 @@ def display_schedule(schedule):
             end_datetime = datetime.combine(sched_date, activity['end_time'])
 
 
-            # Assign colors based on the activity type
-            if activity['activity'] == "Type 1":
-                event_color = "blue"
-            elif activity['activity'] == "Study":
-                event_color = "red"
-            else:
-                event_color = "green"
+            event_color = activity.get('color', 'green')
 
             # Create event dictionary
             event = {

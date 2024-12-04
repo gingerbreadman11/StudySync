@@ -16,11 +16,8 @@ def main():
 
     if st.session_state.get('plan_generated', False):
         # Generate the study plan
-        schedule, error = generate_study_plan(inputs)
-        if error:
-            st.error(error)
-        else:
-            display_schedule(schedule)
+        schedule = generate_study_plan(inputs)
+        display_schedule(schedule)
     else:
         st.write("Please enter your inputs and click 'Generate Study Plan'.")
 
