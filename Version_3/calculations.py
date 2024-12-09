@@ -53,7 +53,6 @@ def generate_study_plan(inputs):
     day_index = 0
     daily_study_hours = 6
 
-
     for study_day in (datetime.today().date() + timedelta(days=i) for i in range((last_exam_date - datetime.today().date()).days + 1)):
         # Skip to the next exam in the cycle if the current one is past
         while day_index < num_exams and study_day >= exams[exam_cycle[day_index]].date():
